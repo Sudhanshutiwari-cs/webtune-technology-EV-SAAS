@@ -43,7 +43,7 @@ interface StatsData {
   revenue_growth: number;
 }
 
-// EV Green Color Palette
+// EV Green Coloor Palette
 const EV_GREEN = {
   primary: '#00C853',
   primaryDark: '#009624',
