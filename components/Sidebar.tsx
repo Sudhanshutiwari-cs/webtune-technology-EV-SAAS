@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Users, 
@@ -43,7 +45,7 @@ interface StatsData {
   revenue_growth: number;
 }
 
-// EV Green Colooor Palette
+// EV Green Color Palette
 const EV_GREEN = {
   primary: '#00C853',
   primaryDark: '#009624',
@@ -63,8 +65,50 @@ export function Sidebar({ activeSection: propActiveSection, onSectionChange: pro
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   
-  const activeSection = propActiveSection !== undefined ? propActiveSection : internalActiveSection;
-  const onSectionChange = propOnSectionChange || setInternalActiveSection;
+  const pathname = usePathname();
+  
+  // Determine active section from URL path - FIXED for /dashboard/* routes
+  const getActiveSectionFromPath = (path: string) => {
+    // Remove leading slash and split into segments
+    const segments = path.split('/').filter(seg => seg !== '');
+    
+    // Handle root or just /dashboard
+    if (segments.length === 0 || (segments.length === 1 && segments[0] === 'dashboard')) {
+      return 'dashboard';
+    }
+    
+    // Check the second segment (after 'dashboard')
+    if (segments.length >= 2 && segments[0] === 'dashboard') {
+      const section = segments[1];
+      switch (section) {
+        case 'customer':
+          return 'customer';
+        case 'vehicles':
+          return 'vehicles';
+        case 'repairs':
+        case 'service':
+          return 'repairs';
+        case 'invoices':
+          return 'invoices';
+        default:
+          return 'dashboard';
+      }
+    }
+    
+    return 'dashboard';
+  };
+  
+  // Use either prop or path-based detection
+  const activeSection = propActiveSection !== undefined 
+    ? propActiveSection 
+    : getActiveSectionFromPath(pathname);
+  
+  // Sync internal state when activeSection changes
+  useEffect(() => {
+    if (!propOnSectionChange) {
+      setInternalActiveSection(activeSection);
+    }
+  }, [activeSection, propOnSectionChange]);
 
   useEffect(() => {
     fetchShowroomAndData();
@@ -174,11 +218,11 @@ export function Sidebar({ activeSection: propActiveSection, onSectionChange: pro
   }
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'customers', label: 'Customers', icon: Users },
-    { id: 'vehicles', label: 'Vehicles', icon: Car },
-    { id: 'repairs', label: 'Service', icon: Wrench },
-    { id: 'invoices', label: 'Invoices', icon: FileText },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+    { id: 'customer', label: 'Customer', icon: Users, href: '/dashboard/customer' },
+    { id: 'vehicles', label: 'Vehicles', icon: Car, href: '/dashboard/vehicles' },
+    { id: 'repairs', label: 'Service', icon: Wrench, href: '/dashboard/repairs' },
+    { id: 'invoices', label: 'Invoices', icon: FileText, href: '/dashboard/invoices' },
   ];
 
   const getPrimaryColor = () => branding?.primary_color || EV_GREEN.primary;
@@ -193,7 +237,7 @@ export function Sidebar({ activeSection: propActiveSection, onSectionChange: pro
     return { background: EV_GREEN.gradient };
   };
 
-  const getButtonStyle = (isActive: boolean) => {
+  const getLinkStyle = (isActive: boolean) => {
     if (isActive) {
       if (branding?.primary_color && branding?.secondary_color) {
         return {
@@ -214,10 +258,20 @@ export function Sidebar({ activeSection: propActiveSection, onSectionChange: pro
     };
   };
 
+  const handleNavigation = (sectionId: string, href: string) => {
+    if (propOnSectionChange) {
+      propOnSectionChange(sectionId);
+    }
+  };
+
+  // Debug log to see what's happening
+  console.log('Current pathname:', pathname);
+  console.log('Active section:', activeSection);
+
   return (
     <div className="w-64 h-full bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 flex flex-col shadow-lg">
       <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
-        <div className="flex items-center gap-3">
+        <Link href="/dashboard" className="flex items-center gap-3">
           <div 
             className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-105"
             style={getGradientStyle()}
@@ -233,25 +287,26 @@ export function Sidebar({ activeSection: propActiveSection, onSectionChange: pro
               {showroom?.business_type || 'Electric Vehicle'} Management
             </p>
           </div>
-        </div>
+        </Link>
       </div>
       
       <nav className="flex-1 p-4 space-y-1">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
-          const buttonStyle = getButtonStyle(isActive);
+          const linkStyle = getLinkStyle(isActive);
           
           return (
-            <button
+            <Link
               key={item.id}
-              onClick={() => onSectionChange(item.id)}
+              href={item.href}
+              onClick={() => handleNavigation(item.id, item.href)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                 isActive 
                   ? 'shadow-md' 
                   : 'hover:bg-green-50 hover:text-green-700'
               }`}
-              style={buttonStyle}
+              style={linkStyle}
             >
               <Icon className={`w-5 h-5 transition-colors ${
                 !isActive && 'text-gray-500 group-hover:text-green-600'
@@ -260,7 +315,7 @@ export function Sidebar({ activeSection: propActiveSection, onSectionChange: pro
               {isActive && (
                 <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
               )}
-            </button>
+            </Link>
           );
         })}
       </nav>

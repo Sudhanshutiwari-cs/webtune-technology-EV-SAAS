@@ -46,7 +46,7 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     // Set current date
     const updateDate = () => {
       const now = new Date();
@@ -54,9 +54,9 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
       setCurrentDate(now.toLocaleDateString('en-US', options));
     };
     updateDate();
-    
+
     fetchUserAndStats();
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -71,7 +71,7 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
           console.error('Error parsing user:', e);
         }
       }
-      
+
       const showroomStr = localStorage.getItem('showroom');
       if (showroomStr) {
         try {
@@ -81,22 +81,22 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
           console.error('Error parsing showroom:', e);
         }
       }
-      
+
       let showroomId = null;
       if (showroomStr) {
         try {
           const showroomData = JSON.parse(showroomStr);
           showroomId = showroomData.id;
-        } catch (e) {}
+        } catch (e) { }
       }
-      
+
       if (!showroomId) {
         const cookieShowroomId = document.cookie.split(';').find(c => c.trim().startsWith('showroom_id='));
         if (cookieShowroomId) {
           showroomId = cookieShowroomId.split('=')[1];
         }
       }
-      
+
       if (showroomId) {
         await fetchStats(showroomId);
       } else {
@@ -118,36 +118,36 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
         .select('*', { count: 'exact', head: true })
         .eq('showroom_id', showroomId)
         .in('status', ['pending', 'in_progress']);
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      
+
       const { data: todayInvoices } = await supabase
         .from('invoices')
         .select('total_amount')
         .eq('showroom_id', showroomId)
         .gte('created_at', today.toISOString())
         .lt('created_at', tomorrow.toISOString());
-      
+
       let todayRevenue = 0;
       if (todayInvoices) {
         todayRevenue = todayInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
       }
-      
+
       const { count: pendingInvoices } = await supabase
         .from('invoices')
         .select('*', { count: 'exact', head: true })
         .eq('showroom_id', showroomId)
         .eq('payment_status', 'pending');
-      
+
       setStats({
         active_repairs: activeRepairs || 0,
         today_revenue: todayRevenue,
         pending_invoices: pendingInvoices || 0
       });
-      
+
     } catch (error) {
       console.error('Error fetching stats:', error);
       setStats({
@@ -179,12 +179,12 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
     localStorage.removeItem('user');
     localStorage.removeItem('showroom');
     localStorage.removeItem('user_logged_in');
-    
+
     const cookies = ['user_id', 'user_name', 'user_email', 'user_role', 'showroom_id', 'showroom_name', 'user_logged_in'];
     cookies.forEach(cookie => {
       document.cookie = `${cookie}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
     });
-    
+
     window.location.href = '/login';
   };
 
@@ -209,7 +209,7 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
               <Menu className="w-5 h-5 text-gray-700" />
             </button>
           )}
-          
+
           <div className="min-w-0 flex-1 md:flex-none">
             <h2 className="text-base md:text-lg lg:text-xl text-gray-800 font-bold tracking-tight truncate">
               {getSectionTitle()}
@@ -219,7 +219,7 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
               <p className="text-xs text-green-700">{currentDate}</p>
             </div>
           </div>
-          
+
           {/* Stats Cards - Hidden on mobile */}
           <div className="hidden lg:flex items-center gap-2 ml-2">
             <div className="flex items-center gap-2 px-2 py-1.5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
@@ -231,7 +231,7 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
                 <div className="text-sm font-bold text-gray-800">{stats?.active_repairs || 0}</div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2 px-2 py-1.5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
               <div className="w-6 h-6 rounded-lg bg-green-100 flex items-center justify-center">
                 <TrendingUp className="w-3 h-3 text-green-700" />
@@ -261,7 +261,7 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
           </div>
 
           {/* Mobile Search Toggle */}
-          <button 
+          <button
             onClick={() => setShowMobileSearch(!showMobileSearch)}
             className="md:hidden p-2 hover:bg-green-50 rounded-lg transition-colors"
           >
@@ -316,7 +316,7 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
             {/* Dropdown Menu */}
             {showUserMenu && (
               <>
-                <div 
+                <div
                   className="fixed inset-0 z-10"
                   onClick={() => setShowUserMenu(false)}
                 />
@@ -336,18 +336,21 @@ export function Header({ activeSection = 'dashboard', onMenuClick }: HeaderProps
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="p-2">
-                    <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-green-50 rounded-lg transition-colors">
+                    <a
+                      href="/dashboard/profile"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-green-50 rounded-lg transition-colors"
+                    >
                       <User className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">My Profile</span>
-                    </button>
+                    </a>
                     <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-green-50 rounded-lg transition-colors">
                       <Settings className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">Settings</span>
                     </button>
                     <div className="border-t border-gray-200 my-2"></div>
-                    <button 
+                    <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
